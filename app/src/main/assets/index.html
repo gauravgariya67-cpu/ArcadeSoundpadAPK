@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Arcade Soundpad</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #1b1b1e; color: #f4f4f5; padding: 10px; padding-bottom: 185px; user-select: none; }
+  .top-bar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  input[type=text], select {
+    background: #232327; border: 1px solid #36363c; border-radius: 7px;
+    padding: 7px 10px; color: #f4f4f5; font-size: 12px; outline: none;
+  }
+  input[type=text]:focus { border-color: #a1a1aa; background: #27272c; }
+  .icon-btn {
+    background: #232327; color: #e4e4e7; border: 1px solid #36363c;
+    border-radius: 7px; padding: 6px 10px; font-weight: 700; font-size: 12px;
+  }
+  .icon-btn.active { background: #e4e4e7; color: #18181b; border-color: #e4e4e7; }
+  .tab-pill {
+    display: flex; background: #232327; border: 1px solid #36363c;
+    border-radius: 7px; padding: 2px; gap: 2px; margin-bottom: 8px;
+  }
+  .tab-pill button {
+    flex: 1; background: transparent; color: #a1a1aa; border: none;
+    padding: 6px 0; border-radius: 5px; font-weight: 700; font-size: 11px;
+  }
+  .tab-pill button.active { background: #e4e4e7; color: #18181b; font-weight: 800; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .card {
+    background: #232327; border: 1px solid #323238; border-radius: 10px;
+    padding: 6px; height: 124px; display: flex; flex-direction: column;
+    justify-content: space-between; align-items: center; position: relative;
+  }
+  .card.playing { background: #2c2c30; border-color: #d4d4d8; }
+  .star-btn {
+    position: absolute; top: 4px; right: 6px; background: transparent;
+    border: none; font-size: 14px; color: #71717a;
+  }
+  .star-btn.fav { color: #e4e4e7; }
+  .trim-btn {
+    position: absolute; top: 5px; left: 6px; background: #323238;
+    color: #a1a1aa; border: none; border-radius: 4px; padding: 1px 5px; font-size: 9px;
+  }
+  .arcade-wrap { margin-top: 14px; width: 64px; height: 52px; position: relative; }
+  .arcade-base {
+    position: absolute; bottom: 0; left: 4px; width: 56px; height: 32px;
+    border-radius: 50%; background: linear-gradient(135deg, #52525b, #27272a);
+    border: 1.5px solid #3f3f46; box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+  }
+  .arcade-cap {
+    position: absolute; top: 2px; left: 8px; width: 48px; height: 34px;
+    border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f4f4f5, #d4d4d8 55%, #71717a);
+    box-shadow: 0 6px 0 #27272a; transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .card:active .arcade-cap { transform: translateY(5px); box-shadow: 0 1px 0 #27272a; }
+  .card-title {
+    font-size: 10.5px; font-weight: 600; color: #d4d4d8; text-align: center;
+    line-height: 1.2; max-height: 26px; overflow: hidden; width: 100%;
+  }
+  .load-more {
+    width: 100%; background: #232327; color: #d4d4d8; border: 1px solid #36363c;
+    border-radius: 7px; padding: 9px; font-weight: 700; font-size: 11px; margin-top: 8px;
+  }
+  .bottom-dock {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #1b1b1e;
+    padding: 6px 10px 8px; border-top: 1px solid #323238; z-index: 20;
+  }
+  .mixer-deck {
+    background: #232327; border: 1px solid #36363c; border-radius: 9px;
+    padding: 8px; margin-bottom: 6px;
+  }
+  .mixer-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; color: #a1a1aa; font-weight: 700; }
+  .mixer-row:last-child { margin-bottom: 0; }
+  input[type=range] { flex: 1; accent-color: #e4e4e7; height: 4px; }
+  .pill-btn {
+    background: #1b1b1e; color: #a1a1aa; border: 1px solid #323238;
+    border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 600;
+  }
+  .pill-btn.active { background: #e4e4e7; color: #18181b; border-color: #fff; font-weight: 800; }
+  .player-bar {
+    background: #202024; border: 1px solid #323238; border-radius: 8px;
+    height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 12px;
+  }
+  .np-text { font-size: 11px; font-weight: 600; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72%; }
+  .stop-btn {
+    background: #2c1a1d; color: #f87171; border: 1px solid #5c262c;
+    border-radius: 6px; font-weight: 800; font-size: 10px; padding: 5px 12px;
+  }
+  .stop-btn:active { background: #ef4444; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <input type="text" id="searchInput" style="flex:1" placeholder="Search MyInstants..." onkeydown="if(event.key==='Enter')triggerSearch()">
+  <button class="icon-btn" onclick="AndroidBridge.importLocalAudio()">＋</button>
+  <button class="icon-btn" onclick="AndroidBridge.enterFloatingMode()">⧉ Float</button>
+  <button class="icon-btn active" id="mixerBtn" onclick="toggleMixer()">🎛</button>
+</div>
+
+<div class="tab-pill">
+  <button id="tab-Instants" class="active" onclick="loadTab('Instants')">Instants</button>
+  <button id="tab-Favs" onclick="loadTab('Favs')">Favs</button>
+  <button id="tab-History" onclick="loadTab('History')">History</button>
+</div>
+
+<div id="grid" class="grid"></div>
+<button id="loadMoreBtn" class="load-more" onclick="loadNext()">Load More</button>
+
+<div class="bottom-dock">
+  <div id="mixerDeck" class="mixer-deck">
+    <div class="mixer-row">
+      <select id="fxPreset" onchange="applyPreset(this.value)">
+        <option value="1.0,1.0">FX: Normal</option>
+        <option value="1.35,1.05">FX: Kid</option>
+        <option value="1.65,1.15">FX: Chipmunk</option>
+        <option value="0.65,0.95">FX: Demon / Deep</option>
+        <option value="0.55,0.85">FX: Monster</option>
+        <option value="1.25,1.25">FX: Nightcore</option>
+        <option value="0.80,0.75">FX: Slow-Mo</option>
+      </select>
+      <span>Vol</span>
+      <input type="range" id="volSlider" min="0" max="100" value="85" oninput="syncMixer()">
+      <button class="pill-btn" id="ovBtn" onclick="togglePill('overlap')">Overlap</button>
+      <button class="pill-btn" id="lpBtn" onclick="togglePill('loop')">Loop</button>
+    </div>
+    <div class="mixer-row">
+      <span id="pLbl" style="width:58px">Pitch 1x</span>
+      <input type="range" id="pSlider" min="50" max="200" value="100" oninput="syncMixer()">
+      <span id="sLbl" style="width:62px">Speed 1x</span>
+      <input type="range" id="sSlider" min="50" max="200" value="100" oninput="syncMixer()">
+    </div>
+    <div class="mixer-row">
+      <select id="ttsVoice" style="max-width:125px">
+        <option value="en_male_grinch">🎙 Jester</option>
+        <option value="en_male_funny">🎙 Wacky</option>
+        <option value="en_us_001">🎙 TikTok Lady</option>
+        <option value="en_us_ghostface">🎙 Ghostface</option>
+        <option value="en_us_rocket">🎙 Rocket</option>
+        <option value="en_male_deadpool">🎙 Deadpool</option>
+        <option value="jp_001">🎙 Anime JP</option>
+        <option value="google_en">🎙 Google TTS</option>
+      </select>
+      <input type="text" id="ttsInput" style="flex:1" placeholder="Type TTS message..." onkeydown="if(event.key==='Enter')speakTts()">
+      <button class="icon-btn" onclick="speakTts()">Speak</button>
+    </div>
+  </div>
+
+  <div class="player-bar">
+    <div class="np-text"><span style="color:#22c55e">●</span> <span id="npTitle">Ready — Background Audio Active</span></div>
+    <button class="stop-btn" onclick="stopAudio()">■ STOP</button>
+  </div>
+</div>
+
+<script>
+let currentTab = 'Instants', currentPage = 1, items = [];
+let favorites = JSON.parse(AndroidBridge.loadFavs() || '{}');
+let historyItems = JSON.parse(AndroidBridge.loadHistory() || '[]');
+let overlap = false, loop = false;
+
+function syncMixer() {
+  const vol = parseInt(document.getElementById('volSlider').value) / 100.0;
+  const pitch = parseInt(document.getElementById('pSlider').value) / 100.0;
+  const speed = parseInt(document.getElementById('sSlider').value) / 100.0;
+  document.getElementById('pLbl').innerText = 'Pitch ' + pitch.toFixed(2).replace(/\.00$/, '') + 'x';
+  document.getElementById('sLbl').innerText = 'Speed ' + speed.toFixed(2).replace(/\.00$/, '') + 'x';
+  AndroidBridge.updateMixer(vol, pitch, speed, overlap, loop);
+}
+
+function applyPreset(val) {
+  const [p, s] = val.split(',');
+  document.getElementById('pSlider').value = Math.round(parseFloat(p) * 100);
+  document.getElementById('sSlider').value = Math.round(parseFloat(s) * 100);
+  syncMixer();
+}
+
+function togglePill(which) {
+  if (which === 'overlap') {
+    overlap = !overlap;
+    document.getElementById('ovBtn').classList.toggle('active', overlap);
+  } else {
+    loop = !loop;
+    document.getElementById('lpBtn').classList.toggle('active', loop);
+  }
+  syncMixer();
+}
+
+function toggleMixer() {
+  const deck = document.getElementById('mixerDeck');
+  const hidden = deck.style.display === 'none';
+  deck.style.display = hidden ? 'block' : 'none';
+  document.getElementById('mixerBtn').classList.toggle('active', hidden);
+}
+
+function loadTab(tab) {
+  currentTab = tab;
+  currentPage = 1;
+  document.querySelectorAll('.tab-pill button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+
+  if (tab === 'Favs') {
+    document.getElementById('loadMoreBtn').style.display = 'none';
+    items = Object.values(favorites);
+    renderGrid();
+  } else if (tab === 'History') {
+    document.getElementById('loadMoreBtn').style.display = 'none';
+    items = historyItems;
+    renderGrid();
+  } else {
+    document.getElementById('loadMoreBtn').style.display = 'block';
+    const q = document.getElementById('searchInput').value;
+    items = JSON.parse(AndroidBridge.fetchInstants(q, 1));
+    renderGrid();
+  }
+}
+
+function triggerSearch() {
+  if (currentTab === 'Instants') {
+    currentPage = 1;
+    items = JSON.parse(AndroidBridge.fetchInstants(document.getElementById('searchInput').value, 1));
+    renderGrid();
+  } else {
+    renderGrid();
+  }
+}
+
+function loadNext() {
+  if (currentTab !== 'Instants') return;
+  currentPage += 1;
+  const more = JSON.parse(AndroidBridge.fetchInstants(document.getElementById('searchInput').value, currentPage));
+  items = items.concat(more);
+  renderGrid();
+}
+
+function renderGrid() {
+  const g = document.getElementById('grid');
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  g.innerHTML = '';
+  items.forEach((it, idx) => {
+    if (currentTab !== 'Instants' && q && !it.title.toLowerCase().includes(q)) return;
+    const isFav = !!favorites[it.url];
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <button class="trim-btn" onclick="event.stopPropagation();promptTrim(${idx})">✂</button>
+      <button class="star-btn ${isFav ? 'fav' : ''}" onclick="event.stopPropagation();toggleFav(${idx})">${isFav ? '★' : '☆'}</button>
+      <div class="arcade-wrap"><div class="arcade-base"></div><div class="arcade-cap"></div></div>
+      <div class="card-title">${it.title.slice(0, 26)}${it.cached ? ' <span style="color:#22c55e">•</span>' : ''}</div>
+    `;
+    card.onclick = () => playItem(it);
+    g.appendChild(card);
+  });
+}
+
+function playItem(it) {
+  document.getElementById('npTitle').innerText = it.title;
+  AndroidBridge.playSound(JSON.stringify(it));
+  it.cached = true;
+  historyItems = [it, ...historyItems.filter(h => h.url !== it.url)].slice(0, 50);
+  AndroidBridge.saveHistory(JSON.stringify(historyItems));
+}
+
+function toggleFav(idx) {
+  const it = items[idx];
+  if (favorites[it.url]) delete favorites[it.url];
+  else favorites[it.url] = it;
+  AndroidBridge.saveFavs(JSON.stringify(favorites));
+  if (currentTab === 'Favs') items = Object.values(favorites);
+  renderGrid();
+}
+
+function promptTrim(idx) {
+  const it = items[idx];
+  const s = prompt('Trim Start (seconds):', it.trim_start || 0);
+  if (s === null) return;
+  const e = prompt('Trim End (seconds, 0 = full):', it.trim_end || 0);
+  if (e === null) return;
+  it.trim_start = parseFloat(s) || 0;
+  it.trim_end = parseFloat(e) || 0;
+  if (favorites[it.url]) {
+    favorites[it.url] = it;
+    AndroidBridge.saveFavs(JSON.stringify(favorites));
+  }
+}
+
+function speakTts() {
+  const box = document.getElementById('ttsInput');
+  const voice = document.getElementById('ttsVoice').value;
+  if (!box.value.trim()) return;
+  document.getElementById('npTitle').innerText = 'TTS: ' + box.value;
+  AndroidBridge.playTts(box.value, voice);
+  box.value = '';
+}
+
+function stopAudio() {
+  AndroidBridge.stopAll();
+  document.getElementById('npTitle').innerText = 'Idle — Background Audio Active';
+}
+
+window.onLocalImported = function(title, url) {
+  favorites[url] = { title: title, url: url, cached: true };
+  AndroidBridge.saveFavs(JSON.stringify(favorites));
+  loadTab('Favs');
+};
+
+loadTab('Instants');
+</script>
+</body>
+</html>
